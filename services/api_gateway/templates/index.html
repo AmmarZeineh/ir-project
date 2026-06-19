@@ -1,0 +1,691 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>IR Search Engine</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+        min-height: 100vh;
+      }
+
+      .header {
+        background: #1e293b;
+        padding: 16px 40px;
+        border-bottom: 1px solid #334155;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .header h1 {
+        font-size: 1.3rem;
+        color: #38bdf8;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 0;
+        border-bottom: 1px solid #334155;
+        background: #1e293b;
+      }
+      .tab {
+        padding: 12px 28px;
+        cursor: pointer;
+        color: #94a3b8;
+        font-size: 0.95rem;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s;
+      }
+      .tab.active {
+        color: #38bdf8;
+        border-bottom-color: #38bdf8;
+      }
+      .tab:hover {
+        color: #e2e8f0;
+      }
+
+      .page {
+        display: none;
+        padding: 32px;
+        max-width: 900px;
+        margin: 0 auto;
+      }
+      .page.active {
+        display: block;
+      }
+
+      /* ── Search Page ── */
+      .search-box {
+        background: #1e293b;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+      }
+      .row {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+      }
+
+      input[type="text"] {
+        flex: 1;
+        padding: 12px 16px;
+        border-radius: 8px;
+        border: 1px solid #334155;
+        background: #0f172a;
+        color: #e2e8f0;
+        font-size: 1rem;
+        min-width: 200px;
+      }
+      input[type="text"]:focus {
+        outline: none;
+        border-color: #38bdf8;
+      }
+
+      select {
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid #334155;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+
+      .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 0.95rem;
+      }
+      .btn-primary {
+        background: #38bdf8;
+        color: #0f172a;
+      }
+      .btn-primary:hover {
+        background: #7dd3fc;
+      }
+      .btn-rag {
+        background: #818cf8;
+        color: #fff;
+      }
+      .btn-rag:hover {
+        background: #a5b4fc;
+      }
+
+      .param-row {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .param-row label {
+        font-size: 0.85rem;
+        color: #94a3b8;
+      }
+      .param-row span {
+        color: #38bdf8;
+        font-weight: 600;
+        min-width: 30px;
+        display: inline-block;
+      }
+
+      .refinement-info {
+        background: #1e3a5f;
+        border-radius: 8px;
+        padding: 10px 16px;
+        margin-bottom: 16px;
+        font-size: 0.85rem;
+        color: #7dd3fc;
+      }
+      .results-header {
+        font-size: 0.9rem;
+        color: #94a3b8;
+        margin-bottom: 12px;
+      }
+
+      .result-card {
+        background: #1e293b;
+        border-radius: 10px;
+        padding: 16px 20px;
+        margin-bottom: 12px;
+        border-left: 3px solid #38bdf8;
+      }
+      .result-meta {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+      .result-rank {
+        font-size: 0.8rem;
+        color: #64748b;
+      }
+      .result-score {
+        font-size: 0.8rem;
+        color: #38bdf8;
+        font-weight: 600;
+      }
+      .result-text {
+        font-size: 0.9rem;
+        color: #cbd5e1;
+        line-height: 1.6;
+      }
+      .result-id {
+        font-size: 0.75rem;
+        color: #475569;
+        margin-top: 6px;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: #94a3b8;
+        display: none;
+      }
+      .error {
+        background: #450a0a;
+        color: #fca5a5;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+      }
+
+      /* ── Chat Page ── */
+      .chat-container {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 160px);
+      }
+
+      .chat-controls {
+        background: #1e293b;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .chat-controls label {
+        font-size: 0.85rem;
+        color: #94a3b8;
+      }
+
+      .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .msg {
+        display: flex;
+        gap: 12px;
+      }
+      .msg.user {
+        flex-direction: row-reverse;
+      }
+      .msg-bubble {
+        max-width: 75%;
+        padding: 12px 16px;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        line-height: 1.6;
+      }
+      .msg.user .msg-bubble {
+        background: #1d4ed8;
+        color: #fff;
+        border-bottom-right-radius: 4px;
+      }
+      .msg.system .msg-bubble {
+        background: #1e293b;
+        color: #e2e8f0;
+        border-bottom-left-radius: 4px;
+      }
+      .msg-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+      }
+      .msg.user .msg-avatar {
+        background: #1d4ed8;
+      }
+      .msg.system .msg-avatar {
+        background: #334155;
+      }
+
+      .sources-toggle {
+        font-size: 0.78rem;
+        color: #38bdf8;
+        cursor: pointer;
+        margin-top: 8px;
+        display: block;
+      }
+      .sources-list {
+        display: none;
+        margin-top: 8px;
+        border-top: 1px solid #334155;
+        padding-top: 8px;
+      }
+      .source-item {
+        font-size: 0.78rem;
+        color: #94a3b8;
+        padding: 4px 0;
+        border-bottom: 1px solid #1e293b;
+      }
+      .source-item:last-child {
+        border-bottom: none;
+      }
+
+      .chat-input-row {
+        display: flex;
+        gap: 12px;
+        margin-top: 16px;
+      }
+      .chat-input-row input {
+        flex: 1;
+      }
+
+      .typing {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        padding: 8px 0;
+      }
+      .typing span {
+        width: 8px;
+        height: 8px;
+        background: #38bdf8;
+        border-radius: 50%;
+        animation: bounce 1.2s infinite;
+      }
+      .typing span:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .typing span:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+      @keyframes bounce {
+        0%,
+        60%,
+        100% {
+          transform: translateY(0);
+        }
+        30% {
+          transform: translateY(-8px);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <span style="font-size: 1.5rem">🔍</span>
+      <h1>IR Search Engine</h1>
+      <span style="color: #475569; font-size: 0.85rem; margin-left: 8px"
+        >Quora & Touche-2020</span
+      >
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('search')">🔎 Search</div>
+      <div class="tab" onclick="switchTab('chat')">💬 RAG Chat</div>
+    </div>
+
+    <!-- ══════════════ SEARCH PAGE ══════════════ -->
+    <div class="page active" id="page-search">
+      <div class="search-box">
+        <div class="row">
+          <input
+            type="text"
+            id="query"
+            placeholder="Enter your search query..."
+          />
+          <button class="btn btn-primary" onclick="search()">Search</button>
+        </div>
+        <div class="row">
+          <select id="dataset">
+            <option value="quora">Quora</option>
+            <option value="touche">Touche-2020</option>
+          </select>
+          <select id="model">
+            <option value="bm25">BM25</option>
+            <option value="tfidf">TF-IDF</option>
+            <option value="embedding">Embedding (BERT)</option>
+            <option value="hybrid_serial">Hybrid Serial</option>
+            <option value="hybrid_parallel_rrf">Hybrid Parallel (RRF)</option>
+            <option value="hybrid_parallel_linear">
+              Hybrid Parallel (Linear)
+            </option>
+          </select>
+          <select id="top_k">
+            <option value="5">Top 5</option>
+            <option value="10" selected>Top 10</option>
+            <option value="20">Top 20</option>
+          </select>
+        </div>
+        <div class="row" style="align-items:center;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.88rem;color:#94a3b8;cursor:pointer;">
+            <input type="checkbox" id="use_refinement" checked
+              style="width:16px;height:16px;accent-color:#38bdf8;cursor:pointer;" />
+            Query Refinement (spell-correct + synonym expansion)
+          </label>
+        </div>
+        <div class="param-row" id="bm25-params">
+          <label
+            >k1: <span id="k1-val">1.5</span>
+            <input
+              type="range"
+              id="k1"
+              min="0.5"
+              max="3.0"
+              step="0.1"
+              value="1.5"
+              oninput="
+                document.getElementById('k1-val').textContent = this.value
+              "
+            />
+          </label>
+          <label
+            >b: <span id="b-val">0.75</span>
+            <input
+              type="range"
+              id="b"
+              min="0"
+              max="1"
+              step="0.05"
+              value="0.75"
+              oninput="
+                document.getElementById('b-val').textContent = this.value
+              "
+            />
+          </label>
+        </div>
+      </div>
+
+      <div class="error" id="error" style="display: none"></div>
+      <div class="loading" id="loading">⏳ Searching...</div>
+      <div class="refinement-info" id="refinement" style="display: none"></div>
+      <div class="results-header" id="results-header"></div>
+      <div id="results"></div>
+    </div>
+
+    <!-- ══════════════ CHAT PAGE ══════════════ -->
+    <div class="page" id="page-chat">
+      <div class="chat-container">
+        <div class="chat-controls">
+          <label
+            >Dataset:
+            <select id="chat-dataset" style="margin-left: 8px">
+              <option value="quora">Quora</option>
+              <option value="touche">Touche-2020</option>
+            </select>
+          </label>
+          <label
+            >Docs retrieved:
+            <select id="chat-topk" style="margin-left: 8px">
+              <option value="3">3</option>
+              <option value="5" selected>5</option>
+              <option value="10">10</option>
+            </select>
+          </label>
+          <button
+            class="btn"
+            style="
+              background: #334155;
+              color: #94a3b8;
+              padding: 8px 16px;
+              font-size: 0.85rem;
+            "
+            onclick="clearChat()"
+          >
+            🗑 Clear
+          </button>
+        </div>
+
+        <div class="chat-messages" id="chat-messages">
+          <div class="msg system">
+            <div class="msg-avatar">🤖</div>
+            <div class="msg-bubble">
+              مرحباً! أنا نظام RAG — بقدر أجاوب أسئلتك بالاعتماد على الوثائق
+              المسترجعة. اختر الـ Dataset وابدأ اسأل! 🔍
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-input-row">
+          <input type="text" id="chat-input" placeholder="Ask a question..." />
+          <button class="btn btn-rag" onclick="sendMessage()">Send ✨</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ── Tab switching ──────────────────────────────────
+      function switchTab(tab) {
+        document.querySelectorAll(".tab").forEach((t, i) => {
+          t.classList.toggle(
+            "active",
+            (tab === "search" && i === 0) || (tab === "chat" && i === 1),
+          );
+        });
+        document
+          .getElementById("page-search")
+          .classList.toggle("active", tab === "search");
+        document
+          .getElementById("page-chat")
+          .classList.toggle("active", tab === "chat");
+      }
+
+      // ── BM25 params toggle ─────────────────────────────
+      document.getElementById("model").addEventListener("change", function () {
+        document.getElementById("bm25-params").style.display =
+          this.value === "bm25" ? "flex" : "none";
+      });
+
+      // ── Enter key ──────────────────────────────────────
+      document.getElementById("query").addEventListener("keypress", (e) => {
+        if (e.key === "Enter") search();
+      });
+      document
+        .getElementById("chat-input")
+        .addEventListener("keypress", (e) => {
+          if (e.key === "Enter") sendMessage();
+        });
+
+      // ══════════════════════════════════════════════════
+      //  SEARCH
+      // ══════════════════════════════════════════════════
+      async function search() {
+        const query = document.getElementById("query").value.trim();
+        if (!query) return;
+
+        document.getElementById("loading").style.display = "block";
+        document.getElementById("results").innerHTML = "";
+        document.getElementById("error").style.display = "none";
+        document.getElementById("refinement").style.display = "none";
+        document.getElementById("results-header").textContent = "";
+
+        try {
+          const res = await fetch("/search", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              query,
+              dataset: document.getElementById("dataset").value,
+              model: document.getElementById("model").value,
+              top_k: parseInt(document.getElementById("top_k").value),
+              k1: parseFloat(document.getElementById("k1").value),
+              b: parseFloat(document.getElementById("b").value),
+              use_refinement: document.getElementById("use_refinement").checked,
+            }),
+          });
+          const data = await res.json();
+          document.getElementById("loading").style.display = "none";
+
+          if (!res.ok) {
+            document.getElementById("error").textContent =
+              data.detail || "Error";
+            document.getElementById("error").style.display = "block";
+            return;
+          }
+
+          if (data.refinement_info) {
+            const ref = document.getElementById("refinement");
+            let refHtml = "";
+            if (data.refinement_info.changed) {
+              refHtml += `✏️ Corrected: <b>${data.refinement_info.corrected}</b><br/>`;
+            }
+            if (data.refinement_info.suggestions && data.refinement_info.suggestions.length > 0) {
+              refHtml += `<span style="color:#94a3b8; font-size:0.8rem;">💡 Suggestions: ${data.refinement_info.suggestions.join(", ")}</span>`;
+            }
+            if (refHtml) {
+              ref.innerHTML = refHtml;
+              ref.style.display = "block";
+            }
+          }
+
+          document.getElementById("results-header").textContent =
+            `${data.results.length} results for "${data.query_original}" — ${data.model}`;
+
+          document.getElementById("results").innerHTML = data.results
+            .map(
+              (r, i) => `
+        <div class="result-card">
+          <div class="result-meta">
+            <span class="result-rank">#${i + 1}</span>
+            <span class="result-score">Score: ${r.score}</span>
+          </div>
+          <div class="result-text">${r.text}</div>
+          <div class="result-id">Doc ID: ${r.doc_id}</div>
+        </div>
+      `,
+            )
+            .join("");
+        } catch (e) {
+          document.getElementById("loading").style.display = "none";
+          document.getElementById("error").textContent = "Connection error";
+          document.getElementById("error").style.display = "block";
+        }
+      }
+
+      // ══════════════════════════════════════════════════
+      //  RAG CHAT
+      // ══════════════════════════════════════════════════
+      let chatHistory = [];
+
+      function addMessage(role, content, sources = []) {
+        const container = document.getElementById("chat-messages");
+        const isUser = role === "user";
+        const id = "msg-" + Date.now();
+
+        const sourcesHtml = sources.length
+          ? `
+      <span class="sources-toggle" onclick="toggleSources('${id}')">📄 ${sources.length} sources</span>
+      <div class="sources-list" id="${id}">
+        ${sources
+          .map(
+            (s, i) => `
+          <div class="source-item">
+            <b>#${i + 1}</b> [Score: ${s.score}] ${s.doc_id}
+          </div>
+        `,
+          )
+          .join("")}
+      </div>
+    `
+          : "";
+
+        container.innerHTML += `
+      <div class="msg ${isUser ? "user" : "system"}">
+        <div class="msg-avatar">${isUser ? "👤" : "🤖"}</div>
+        <div class="msg-bubble">
+          ${content}
+          ${sourcesHtml}
+        </div>
+      </div>
+    `;
+        container.scrollTop = container.scrollHeight;
+      }
+
+      function addTyping() {
+        const container = document.getElementById("chat-messages");
+        container.innerHTML += `
+      <div class="msg system" id="typing-indicator">
+        <div class="msg-avatar">🤖</div>
+        <div class="msg-bubble">
+          <div class="typing"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+    `;
+        container.scrollTop = container.scrollHeight;
+      }
+
+      function removeTyping() {
+        const el = document.getElementById("typing-indicator");
+        if (el) el.remove();
+      }
+
+      function toggleSources(id) {
+        const el = document.getElementById(id);
+        el.style.display = el.style.display === "block" ? "none" : "block";
+      }
+
+      function clearChat() {
+        chatHistory = [];
+        document.getElementById("chat-messages").innerHTML = `
+      <div class="msg system">
+        <div class="msg-avatar">🤖</div>
+        <div class="msg-bubble">Chat cleared! Ask me anything 🔍</div>
+      </div>
+    `;
+      }
+
+      async function sendMessage() {
+        const input = document.getElementById("chat-input");
+        const query = input.value.trim();
+        if (!query) return;
+
+        input.value = "";
+        addMessage("user", query);
+        addTyping();
+
+        const dataset = document.getElementById("chat-dataset").value;
+        const top_k = parseInt(document.getElementById("chat-topk").value);
+
+        try {
+          const res = await fetch("/rag", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query, dataset, top_k }),
+          });
+          const data = await res.json();
+          removeTyping();
+
+          chatHistory.push({ role: "user", content: query });
+          chatHistory.push({ role: "assistant", content: data.answer });
+
+          addMessage("system", data.answer, data.sources || []);
+        } catch (e) {
+          removeTyping();
+          addMessage("system", "❌ Connection error — are services running?");
+        }
+      }
+    </script>
+  </body>
+</html>

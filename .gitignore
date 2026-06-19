@@ -1,0 +1,19 @@
+.DS_Store
+.env
+.venv/
+.ipynb_checkpoints/
+__pycache__/
+*.py[cod]
+data/
+
+# Local archives and generated data artifacts.
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.gz
+*.7z
+*.rar
+*.npy
+*.pkl
+*.db

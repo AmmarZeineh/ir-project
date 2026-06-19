@@ -1,0 +1,11 @@
+fastapi
+httpx
+ir-datasets
+nltk
+numpy
+pandas
+pyspellchecker
+pydantic
+sentence-transformers
+tqdm
+uvicorn[standard]
